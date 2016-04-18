@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+        <id>AWANG Employee Store, v2.0.2.0 edition</id>
+        <version>1.0</version>
+        <vqmver>2.X</vqmver>
+        <author>JOHNLIM</author>
+		
+        <file name="catalog/model/tool/image.php">
+                <operation info="Allow URL links for images right at the start">
+                        <search position="before"><![CDATA[		if (!is_file(DIR_IMAGE . $filename)) {]]></search>
+                        <add><![CDATA[	if ((substr($filename, 0, 5))=="http:") { $new_image = str_replace('\\', '/', $filename); return $new_image;} ]]></add>
+                </operation>
+                <operation info="Allow URL links for images">
+                        <search position="after"><![CDATA[		if (!is_file(DIR_IMAGE . $filename)) {]]></search>
+                        <add><![CDATA[		if ((substr($filename, 0, 5))=="http:") return $filename; else ]]></add>
+                </operation>
+		</file>
+        <file name="catalog/model/catalog/product.php">
+                <operation info="Allow to search for size">
+                        <search position="before"><![CDATA[		$sql .= " LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) LEFT JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'";]]></search>
+                        <add><![CDATA[		$sql .= " LEFT JOIN " . DB_PREFIX . "product_option_value pov ON (p.product_id = pov.product_id) ";
+		$sql .= " LEFT JOIN " . DB_PREFIX . "option_value_description ovd ON (pov.option_value_id = ovd.option_value_id) ";]]></add>
+                </operation>
+                <operation info="Search for the Option Value Description name field for size">
+                        <search position="replace"><![CDATA[					$sql .= " OR pd.description LIKE '%" . $this->db->escape($data['filter_name']) . "%'";]]></search>
+                        <add><![CDATA[					$sql .= " OR ovd.name LIKE '%" . $this->db->escape($data['filter_name']) . "%'";]]></add>
+                </operation>
+		</file>
+		<file name="catalog/view/theme/aw-theme/template/product/product.tpl">
+                <operation info="Assign id to main image">
+                        <search position="replace"><![CDATA[            <li><a class="thumbnail" href="<?php echo $popup; ?>" title="<?php echo $heading_title; ?>"><img src="<?php echo $thumb; ?>" title="<?php echo $heading_title; ?>" alt="<?php echo $heading_title; ?>" /></a></li>]]></search>
+                        <add><![CDATA[            <li><a class="thumbnail" href="<?php echo $popup; ?>" title="<?php echo $heading_title; ?>"><img src="<?php echo $thumb; ?>"  id="mainpic" title="<?php echo $heading_title; ?>" alt="<?php echo $heading_title; ?> " onClick="javaScript:changeImage('<?php echo $popup; ?>');" /></a></li>]]></add>
+                </operation>
+
+                <operation info="Add onclick image link">
+                        <search position="replace"><![CDATA[            <li class="image-additional"><a class="thumbnail" href="<?php echo $image['popup']; ?>" title="<?php echo $heading_title; ?>"> <img src="<?php echo $image['thumb']; ?>" title="<?php echo $heading_title; ?>" alt="<?php echo $heading_title; ?>" /></a></li>]]></search>
+                        <add><![CDATA[            <li class="image-additional"><a class="thumbnail" href="<?php echo $image['popup']; ?>" title="<?php echo $heading_title; ?>"> <img src="<?php echo $image['thumb']; ?>" title="<?php echo $heading_title; ?>" alt="<?php echo $heading_title; ?>" onClick="javaScript:changeImage('<?php echo $image['popup']; ?>');" /></a></li>]]></add>
+                </operation>
+
+                <operation info="Add script to change image">
+                        <search position="before"><![CDATA[//--></script>]]></search>
+                        <add><![CDATA[
+  function changeImage(imgName)
+  {
+     image = document.getElementById('mainpic');
+     image.src = imgName;
+  }
+						]]></add>
+                </operation>
+		</file>
+
+		<file name="catalog/language/english/account/login.php">
+                <operation info="Change login to Employee Login">
+                        <search position="replace"><![CDATA[$_['text_returning_customer']      = 'Returning Customer';]]></search>
+                        <add><![CDATA[$_['text_returning_customer']      = 'Employee Login';]]></add>
+				</operation>
+				<operation info="Change customer notice to employee notice">
+                        <search position="replace"><![CDATA[$_['text_i_am_returning_customer'] = 'I am a returning customer';]]></search>
+                        <add><![CDATA[$_['text_i_am_returning_customer'] = 'I am an employee of Alexander Wang';]]></add>
+                </operation>
+		</file>
+		<file name="catalog/language/english/product/product.php">
+                <operation info="Assign id to main image">
+                        <search position="replace"><![CDATA[$_['text_manufacturer']        = 'Brand:';]]></search>
+                        <add><![CDATA[$_['text_manufacturer']        = 'Division:';]]></add>
+                </operation>
+		</file>
+		<file name="catalog/language/english/product/*.php">
+                <operation info="Estimated total with tax">
+                        <search position="replace"><![CDATA[= 'Ex Tax:';]]></search>
+                        <add><![CDATA[= 'Est Total with Tax:';]]></add>
+                </operation>
+		</file>
+		<file name="catalog/view/theme/default/template/checkout/cart.tpl">
+                <operation info="Assign id to main image">
+                        <search position="replace"><![CDATA[            <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-thumbnail" /></a>]]></search>
+                        <add><![CDATA[            <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" width="100" height="100" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-thumbnail" /></a>]]></add>
+				</operation>
+                <operation info="Remove Coupon and Gift Voucher accordian">
+                        <search position="replace"><![CDATA[<?php if ($coupon || $voucher || $reward || $shipping) { ?>]]></search>
+                        <add><![CDATA[<?php if (NULL) { ?>]]></add>
+                </operation>
+		</file>		
+		<file name="catalog/view/theme/aw-theme/template/common/cart.tpl">
+                <operation info="Assign id to main image">
+                        <search position="replace"><![CDATA[            <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-thumbnail" /></a>]]></search>
+                        <add><![CDATA[            <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" width="80" height="80" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-thumbnail" /></a>]]></add>
+                </operation>
+		</file>		
+		<file name="catalog/view/theme/aw-theme/template/common/cart.tpl">
+                <operation info="Fix missing product key">
+                        <search position="replace"><![CDATA[<?php echo $product['key']; ?>]]></search>
+                        <add><![CDATA[<?php echo $product['cart_id']; ?>]]></add>
+                </operation>
+		</file>		
+
+		<file name="catalog/view/theme/default/template/common/header.tpl">
+                <operation info="Remove register link">
+                        <search position="replace"><![CDATA[            <li><a href="<?php echo $register; ?>"><?php echo $text_register; ?></a></li>]]></search>
+                        <add><![CDATA[]]></add>
+                </operation>
+		</file>		
+		<file name="catalog/controller/checkout/checkout.php">
+                <operation info="Fix the missing product Key">
+                        <search position="replace"><![CDATA[=> $product['key'],]]></search>
+                        <add><![CDATA[=> $product['cart_id'],]]></add>
+                </operation>
+		</file>		
+		<file name="catalog/controller/common/cart.php">
+                <operation info="Show Sub-Total in Cart Button instead">
+                        <search position="before"><![CDATA[		$data['text_empty'] = $this->language->get('text_empty');]]></search>
+                        <add><![CDATA[		$total = $this->cart->getSubTotal();]]></add>
+                </operation>
+		</file>		
+		<file name="catalog/controller/common/home.php">
+                <operation info="Redirect to login">
+                        <search position="before"><![CDATA[		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/common/home.tpl')) {]]></search>
+                        <add><![CDATA[		if (!$this->customer->isLogged())
+		{
+			header("Location: http://localhost/store3/index.php?route=account/login");
+			die();
+		}
+		
+]]></add>
+                </operation>
+		</file>		
+		
+		<file name="catalog/view/theme/aw-theme/template/product/category.tpl">
+                <operation info="Assign id to main image">
+                        <search position="replace"><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></search>
+                        <add><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" width="160" height= "160" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></add>
+                </operation>
+		</file>			
+		<file name="catalog/view/theme/default/template/product/manufacturer_info.tpl">
+                <operation info="Size the special products image">
+                        <search position="replace"><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></search>
+                        <add><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" width="160" height= "160" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></add>
+                </operation>
+		</file>			
+		<file name="catalog/view/theme/default/template/product/product.tpl">
+                <operation info="Size the special products image">
+                        <search position="replace"><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></search>
+                        <add><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" width="160" height= "160" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></add>
+                </operation>
+		</file>			
+		<file name="catalog/view/theme/default/template/product/search.tpl">
+                <operation info="Size the special products image">
+                        <search position="replace"><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></search>
+                        <add><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" width="160" height= "160" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></add>
+                </operation>
+		</file>			
+		<file name="catalog/view/theme/default/template/product/special.tpl">
+                <operation info="Size the special products image">
+                        <search position="replace"><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></search>
+                        <add><![CDATA[            <div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" width="160" height= "160" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></add>
+                </operation>
+		</file>			
+		<file name="catalog/view/theme/default/template/product/search.tpl">
+                <operation info="Size the special products image">
+                        <search position="replace"><![CDATA[<p><a href="<?php echo $compare; ?>" id="compare-total"><?php echo $text_compare; ?></a></p>]]></search>
+                        <add><![CDATA[]]></add>
+                </operation>
+		</file>			
+		<file name="catalog/view/theme/default/template/common/footer.tpl">
+                <operation info="Remove the options listed at the bottom">
+                        <search position="replace"><![CDATA[          <li><a href="<?php echo $manufacturer; ?>"><?php echo $text_manufacturer; ?></a></li>]]></search>
+                        <add><![CDATA[]]></add>
+                </operation>
+                <operation info="Remove the options listed at the bottom">
+                        <search position="replace"><![CDATA[          <li><a href="<?php echo $affiliate; ?>"><?php echo $text_affiliate; ?></a></li>]]></search>
+                        <add><![CDATA[]]></add>
+                </operation>
+                <operation info="Remove the options listed at the bottom">
+                        <search position="replace"><![CDATA[          <li><a href="<?php echo $voucher; ?>"><?php echo $text_voucher; ?></a></li>]]></search>
+                        <add><![CDATA[]]></add>
+                </operation>
+                <operation info="Remove the options listed at the bottom">
+                        <search position="replace"><![CDATA[          <li><a href="<?php echo $newsletter; ?>"><?php echo $text_newsletter; ?></a></li>]]></search>
+                        <add><![CDATA[]]></add>
+                </operation>
+		</file>			
+</modification>

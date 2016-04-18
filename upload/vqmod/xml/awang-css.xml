@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+        <id>AWANG Employee Store, v2.0.2.0 edition</id>
+        <version>1.0</version>
+        <vqmver>2.X</vqmver>
+        <author>JOHNLIM</author>
+		
+        <file name="catalog/view/javascript/bootstrap/css/bootstrap.min.css">
+                <operation info="Change style to fit AW branding">
+                        <search position="replace"><![CDATA[{.navbar{border-radius:4px}}]]></search>
+                        <add><![CDATA[/*{.navbar{border-radius:4px}}*/]]></add>
+                </operation>
+		</file>
+        <file name="catalog/view/javascript/bootstrap/css/bootstrap.min.css">
+                <operation info="Change color on lower page button">
+                        <search position="replace"><![CDATA[#337AB7]]></search>
+                        <add><![CDATA[#666666]]></add>
+                </operation>
+		</file>
+</modification>

@@ -1,0 +1,19 @@
+<modification>
+	<name>remove_currency</name>
+	<code>remove_currency</code>
+	<version>1.0</version>
+	<vqmver>2.4.0</vqmver>
+	<author>trikinuke</author>
+
+	
+	<file name="catalog/view/theme/*/template/common/header.tpl">
+		<operation info="Remove Currency from header bar">
+			<search position="replace"><![CDATA[<?php echo $currency; ?>]]></search>
+			<add><![CDATA[]]></add>
+		</operation>	
+		<operation info="Remove contact Button from header bar">
+			<search position="replace"><![CDATA[        <li><a href="<?php echo $contact; ?>"><i class="fa fa-phone"></i></a> <span class="hidden-xs hidden-sm hidden-md"><?php echo $telephone; ?></span></li>]]></search>
+			<add><![CDATA[]]></add>
+		</operation>	
+	</file>
+</modification>

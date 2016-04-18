@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+        <id>AWANG Employee Store, v2.0.2.0 edition</id>
+        <version>1.0</version>
+        <vqmver>2.X</vqmver>
+        <author>JOHNLIM</author>
+		
+        <file name="admin/language/english/common/footer.php">
+                <operation info="Change footer to Alexander Wang, Inc.">
+                        <search position="replace"><![CDATA['<a href="http://www.opencart.com">OpenCart</a> &copy; 2009-']]></search>
+                        <add><![CDATA['<a href="http://www.alexanderwang.com">Alexander Wang, Inc.</a> &copy; 2015-']]></add>
+                </operation>
+		</file>
+        <file name="admin/view/template/common/header.tpl">
+                <operation info="Set favicon.ico to AW">
+                        <search position="after"><![CDATA[<meta charset="UTF-8" />]]></search>
+                        <add><![CDATA[<link href="favicon.ico" rel="icon" type="image/x-icon" />]]></add>
+                </operation>
+		</file>
+		<file name="admin/language/english/sale/order.php">
+        <operation error="log">
+            <search><![CDATA[$_['text_invoice_no']            = 'Invoice No.:';]]></search>
+            <add position="replace"><![CDATA[$_['text_invoice_no']                         = 'Employee Order No.:';]]></add>
+        </operation>
+        <operation error="log">
+            <search><![CDATA[$_['text_invoice_date']          = 'Invoice Date:';]]></search>
+            <add position="replace"><![CDATA[$_['text_invoice_date']                       = 'Employee Order Date:';]]></add>
+        </operation>
+        <operation error="log">
+            <search><![CDATA[$_['text_invoice']               = 'Invoice';]]></search>
+            <add position="replace"><![CDATA[$_['text_invoice']                            = 'Employee Order';]]></add>
+        </operation>
+        <operation error="log">
+            <search><![CDATA[$_['text_total']                 = 'Total:';]]></search>
+            <add position="replace"><![CDATA[$_['text_total']                              = 'Estimated Total:';]]></add>
+        </operation>
+    </file>
+
+        <file name="admin/model/tool/image.php">
+                <operation info="Allow URL links for images right at the start">
+                        <search position="before"><![CDATA[		if (!is_file(DIR_IMAGE . $filename)) {]]></search>
+                        <add><![CDATA[	if ((substr($filename, 0, 5))=="http:") { $new_image = str_replace('\\', '/', $filename); return $new_image . "\" width=\"". $width ."\" height=\"" . $height;} 
+						else { $filename='no_image.png';} ]]></add>
+                </operation>
+		</file>
+        <file name="admin/controller/catalog/product.php">
+                <operation info="Allow URL links for images for product page 1">
+                        <search position="replace"><![CDATA[				$image = $this->model_tool_image->resize('no_image.png', 40, 40);]]></search>
+                        <add><![CDATA[				$image = $this->model_tool_image->resize($result['image'], 40, 40);]]></add>
+                </operation>
+                <operation info="Allow URL links for images for product page 2">
+                        <search position="replace"><![CDATA[if (is_file(DIR_IMAGE . $product_image['image'])) {]]></search>
+                        <add><![CDATA[if (is_file(DIR_IMAGE . $product_image['image']) || ((substr($product_image['image'], 0, 5))=="http:")) {]]></add>
+                </operation>
+				<operation info="Allow URL links for images for product page 3">
+                        <search position="replace"><![CDATA[			if (is_file(DIR_IMAGE . $result['image'])) {]]></search>
+                        <add><![CDATA[			if (is_file(DIR_IMAGE . $result['image']) || (substr($result['image'], 0, 5)=="http:")) {]]></add>
+                </operation>		
+		</file>
+        <file name="admin/view/template/common/profile.tpl">
+                <operation info="Change to shopping bag icon">
+                        <search position="replace"><![CDATA[		<i class="fa fa-opencart"></i>]]></search>
+                        <add><![CDATA[		<i class="fa fa-truck" style="color:black"></i>]]></add>
+                </operation>
+		</file>
+</modification>

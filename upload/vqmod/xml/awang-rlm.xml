@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+        <id>Add AWANG, IIS edition</id>
+        <version>1.0</version>
+        <vqmver>2.X</vqmver>
+        <author>JOHNLIM</author>	
+	<file path="admin/controller/common/menu.php">
+                <operation info="After backup, add AWANG">
+						<search position="after"><![CDATA[$data['text_attribute_group'] = $this->language->get('text_attribute_group');]]></search>
+                        <add><![CDATA[
+						$data['text_rlmimport'] = $this->language->get('text_rlmimport');
+						$data['text_awimage'] = $this->language->get('text_awimage');]]>
+						</add>
+                </operation>
+                <operation info="After backup, add AWANG">
+						<search position="after"><![CDATA[data['zone'] = $this->url->link('localisation/zone', 'token=' . $this->session->data['token'], 'SSL');]]></search>
+                        <add><![CDATA[
+						$data['awimage'] = $this->url->link('awang/awimage', 'token=' . $this->session->data['token'], 'SSL');
+						$data['rlmimport'] = $this->url->link('awang/rlmexport', 'token=' . $this->session->data['token'], 'SSL');]]>
+						</add>
+                </operation>
+	</file>
+	<file path="admin/language/*/common/menu.php">
+                <operation info="After Zone, add RLMImport">
+                        <search position="after"><![CDATA[$_['text_attribute_group']             = 'Attribute Groups';]]></search>
+                        <add><![CDATA[
+						$_['text_awang']                   = 'AWANG';
+						$_['text_rlmimport']               = 'AW Import';
+						$_['text_awimage']               = 'AW Product Image Import';
+                        ]]></add>
+                </operation>
+	</file>
+	<file path="admin/view/template/common/menu.tpl">
+                <operation info="Before Help, add AWANG">
+                        <search position="after"><![CDATA[<li><a href="<?php echo $error_log; ?>"><?php echo $text_error_log; ?></a></li>]]></search>
+                        <add><![CDATA[<!-- AWANG NAVIGATION LINK --><li><a href="<?php echo $rlmimport; ?>"><?php echo $text_rlmimport; ?></a></li>
+						<li><a href="<?php echo $awimage; ?>"><?php echo $text_awimage; ?></a></li>]]></add>
+                </operation>
+	</file>
+        <file name="admin/model/tool/image.php">
+                <operation info="Change Model_Tool_Image_Resize to not check for image file">
+                        <search position="after"><![CDATA[public function resize($filename, $width, $height) {]]></search>
+                        <add><![CDATA[
+		if (filter_var($filename, FILTER_VALIDATE_URL)) {
+			return $filename."\" width=\"".$width."\" height=\"".$height;
+		}
+		]]></add>
+                </operation>
+        </file>
+
+        <file name="admin/model/sale/order.php">
+                <operation info="Change the Invoice Product Query">
+                        <search position="replace"><![CDATA[		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_product WHERE order_id = '" . (int)$order_id . "'");
+]]></search>
+                        <add><![CDATA[		$query = $this->db->query("SELECT op.*, p.ean, p.mpn, p.location, p.manufacturer_id FROM " . DB_PREFIX . "order_product op LEFT OUTER JOIN ". DB_PREFIX . "product p ON op.product_id = p.product_id WHERE op.order_id = '" . (int)$order_id . "'");
+]]></add>
+                </operation>
+        </file>		
+        <file name="admin/controller/sale/order.php">
+                <operation info="Add data to the Invoice Product Array">
+                        <search position="after"><![CDATA[$product_data[] = array(
+]]></search>
+                        <add><![CDATA[						'div'     => $product['manufacturer_id'],
+						'sea'    => $product['ean'],
+						'colorcode'     => $product['mpn'],
+						'colordesc'    => $product['location'],
+]]></add>
+                </operation>
+        </file>
+        <file name="admin/language/english/sale/order.php">
+                <operation info="Add data to the Invoice Titles">
+                        <search position="after"><![CDATA[$_['column_action']                           = 'Action';]]></search>
+                        <add><![CDATA[
+$_['column_div']                              = 'DIV';
+$_['column_sea']                              = 'Sea';
+$_['column_styleno']                          = 'Style #';
+$_['column_styledesc']                        = 'Style Description';
+$_['column_colorcode']                        = 'Color Code';
+$_['column_colorname']                        = 'Color Name';
+$_['column_size']                             = 'Size';
+
+]]></add>
+                </operation>
+        </file>
+</modification>

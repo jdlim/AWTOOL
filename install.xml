@@ -1,0 +1,39 @@
+<modification>
+	<name>AW Import Tool for OpenCart 2.0.x</name>
+	<code>AW Import Tool for OpenCart 2.0.x</code>
+	<version>2.0.x-2.26</version>
+	<author>AlexanderWang.com</author>
+	<file path="admin/controller/common/menu.php">
+                <operation info="After backup, add AWANG">
+						<search position="after"><![CDATA[$data['text_attribute_group'] = $this->language->get('text_attribute_group');]]></search>
+                        <add><![CDATA[
+						$data['text_rlmimport'] = $this->language->get('text_rlmimport');
+						$data['text_awimage'] = $this->language->get('text_awimage');]]>
+						</add>
+                </operation>
+                <operation info="After backup, add AWANG">
+						<search position="after"><![CDATA[data['zone'] = $this->url->link('localisation/zone', 'token=' . $this->session->data['token'], 'SSL');]]></search>
+                        <add><![CDATA[
+						$data['awimage'] = $this->url->link('awang/awimage', 'token=' . $this->session->data['token'], 'SSL');
+						$data['rlmimport'] = $this->url->link('awang/rlmexport', 'token=' . $this->session->data['token'], 'SSL');]]>
+						</add>
+                </operation>
+	</file>
+	<file path="admin/language/*/common/menu.php">
+                <operation info="After Zone, add RLMImport">
+                        <search position="after"><![CDATA[$_['text_attribute_group']             = 'Attribute Groups';]]></search>
+                        <add><![CDATA[
+						$_['text_awang']                   = 'AWANG';
+						$_['text_rlmimport']               = 'AW Import';
+						$_['text_awimage']               = 'AW Product Image Import';
+                        ]]></add>
+                </operation>
+	</file>
+	<file path="admin/view/template/common/menu.tpl">
+                <operation info="Before Help, add AWANG">
+                        <search position="after"><![CDATA[<li><a href="<?php echo $error_log; ?>"><?php echo $text_error_log; ?></a></li>]]></search>
+                        <add><![CDATA[<!-- AWANG NAVIGATION LINK --><li><a href="<?php echo $rlmimport; ?>"><?php echo $text_rlmimport; ?></a></li>
+						<li><a href="<?php echo $awimage; ?>"><?php echo $text_awimage; ?></a></li>]]></add>
+                </operation>
+	</file>
+</modification>

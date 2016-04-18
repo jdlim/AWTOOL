@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+   <name>Remove Downloads from Opencart 2.0.1.1</name>
+   <code>Remove Downloads from Opencart 2.0.1.1</code>
+   <version>1.0</version>
+   <vqmver>2.5.1</vqmver>
+   <author>Asim Munir</author>
+   
+   <file path="catalog/controller/" name="module/account.php,account/account.php,common/header.php,information/sitemap.php">
+       <operation info="Removes Downloads Text from Controllers">
+           <search position="replace"><![CDATA[
+           $data['text_download'] = $this->language->get('text_download');
+           ]]></search>
+           <add><![CDATA[
+           ]]></add>
+       </operation>
+       <operation info="Removes Downloads Data Links from Controllers">
+           <search position="replace"><![CDATA[	   
+			$data['download'] = $this->url->link('account/download', '', 'SSL');
+           ]]></search>
+           <add><![CDATA[
+           ]]></add>
+       </operation>
+   </file>
+   
+    <file path="catalog/view/theme/*/template/" name="module/account.tpl">
+       <operation info="Removes Downloads Text and Links from View">
+           <search position="replace"><![CDATA[
+           <a href="<?php echo $download; ?>" class="list-group-item"><?php echo $text_download; ?></a>
+           ]]></search>
+           <add><![CDATA[
+           ]]></add>
+       </operation>
+   </file>
+   
+    <file path="catalog/view/theme/*/template/" name="account/account.tpl,common/header.tpl,information/sitemap.tpl">
+       <operation info="Removes Downloads Text and Links from Views">
+           <search position="replace"><![CDATA[
+			<li><a href="<?php echo $download; ?>"><?php echo $text_download; ?></a></li>
+           ]]></search>
+           <add><![CDATA[
+           ]]></add>
+       </operation>
+   </file>
+  
+</modification>

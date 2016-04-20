@@ -4,7 +4,36 @@
         <version>1.0</version>
         <vqmver>2.X</vqmver>
         <author>JOHNLIM</author>
-		
+		<file name="catalog/view/theme/default/template/module/account.tpl">
+                <operation info="Remove login menu items - remove Register">
+                        <search position="replace"><![CDATA[<a href="<?php echo $register; ?>" class="list-group-item"><?php echo $text_register; ?></a>]]></search>
+                        <add><![CDATA[]]></add>
+                </operation>	
+                <operation info="Remove login menu items - Delete Newsletter">
+                        <search position="replace"><![CDATA[<a href="<?php echo $recurring; ?>" class="list-group-item"><?php echo $text_recurring; ?></a>]]></search>
+                        <add><![CDATA[]]></add>
+                </operation>					
+				<operation info="Remove login menu items - Delete Rewards">
+						<search position="replace"><![CDATA[<a href="<?php echo $return; ?>" class="list-group-item"><?php echo $text_return; ?></a>]]></search>
+						<add><![CDATA[]]></add>
+				</operation>
+				<operation info="Remove login menu items - Newsletter">
+						<search position="replace"><![CDATA[<a href="<?php echo $newsletter; ?>" class="list-group-item"><?php echo $text_newsletter; ?></a>]]></search>
+						<add><![CDATA[]]></add>
+				</operation>
+		</file>
+		<file name="catalog/language/*/payment/cod.php">
+                <operation info="Change Cash on Deliver to Employee Allowance">
+                        <search position="replace"><![CDATA[$_['text_title'] = 'Cash On Delivery';]]></search>
+                        <add><![CDATA[$_['text_title'] = 'Use Employee Allowance';]]></add>
+                </operation>		
+		</file>
+		<file name="catalog/language/*/checkout/checkout.php">
+                <operation info="Add error for not enough balance">
+                        <search position="after"><![CDATA[$_['error_agree']                    = 'Warning: You must agree to the %s!';]]></search>
+                        <add><![CDATA[$_['not_enough_balance']                    = 'Warning: You do not have enough allowance. Please contact HR.';]]></add>
+                </operation>		
+		</file>
         <file name="catalog/model/tool/image.php">
                 <operation info="Allow URL links for images right at the start">
                         <search position="before"><![CDATA[		if (!is_file(DIR_IMAGE . $filename)) {]]></search>

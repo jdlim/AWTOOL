@@ -1412,8 +1412,11 @@ class ControllerCheckoutCheckout extends Controller {
 				
 				if ($information_info && !isset($this->request->post['agree'])) {
 					$json['error']['warning'] = sprintf($this->language->get('error_agree'), $information_info['title']);
-				}
+				} else if ($this->currency->format($this->cart->getTotal()) > $this->currency->format($this->customer->getBalance())) {
+						$json['error']['warning'] = sprintf($this->language->get('not_enough_balance'), $information_info['title']);
+				}					// Modified: Added in check for Employee Balance
 			}
+
 			
 			if (!$json) {
 				$this->session->data['payment_method'] = $this->session->data['payment_methods'][$this->request->post['payment_method']];

@@ -279,9 +279,11 @@ class ModelAwangRlmexport extends Model {
 			return FALSE;
 		}
 
-		// start transaction, remove product to category links from database
+		// start transaction, remove product to category links from database and disable products initially
 		$sql = "START TRANSACTION;\n";
 		$sql .= "TRUNCATE TABLE `".DB_PREFIX."product_to_category`;\n";
+		$sql .= "SET SQL_SAFE_UPDATES=0;\n";
+		$sql .= "UPDATE `".DB_PREFIX."product` SET status=0;\n";
 		$this->multiquery( $database, $sql );
 		
 		// get weight classes
@@ -1142,17 +1144,27 @@ class ModelAwangRlmexport extends Model {
 				$optionValueIds[$name][$type][$value][$image] = $optionValueId;
 			}
 		}
-		
+
 		// start transaction, remove product options and product option values from database
 		$sql = "START TRANSACTION;\n";
 		$sql .= "DELETE FROM ".DB_PREFIX."product_option;\n";
 		$sql .= "DELETE FROM ".DB_PREFIX."product_option_value;\n";
 		$this->multiquery( $database, $sql );
-		
+					// Need to add the UPC for color size combination
+				$upccheck = array();
+				$sql = "SELECT upc FROM oc_product_option_value;";
+				$upccheck = $database->query($sql);
+				$sql = "";
+				if (!$upccheck) {
+					$sql ="ALTER TABLE oc_product_option_value ADD upc VARCHAR(16);";
+					$database->query($sql);
+					$sql="";
+				}
 		// add product options and product option values to the database
 		$productOptionIds = array(); // indexed by [product_id][option_id]
 		$maxProductOptionId = 0;
 		$maxProductOptionValueId = 0;
+
 		foreach ($options as $option) {
 			$productId = $option['product_id'];
 			$langId = $option['language_id'];
@@ -1160,6 +1172,7 @@ class ModelAwangRlmexport extends Model {
 			$type = $option['type'];
 			$value = $option['value'];
 			$image = $option['image'];
+			$upc = $option['upc'];
 			$required = $option['required'];
 			$required = ((strtoupper($required)=="TRUE") || (strtoupper($required)=="YES") || (strtoupper($required)=="ENABLED")) ? 1 : 0;
 			if (!isset($optionIds[$name])) {
@@ -1233,18 +1246,45 @@ class ModelAwangRlmexport extends Model {
 				$pointsPrefix = $option['points_prefix'];
 				$weight = $option['weight'];
 				$weightPrefix = $option['weight_prefix'];
+				$upc = $option['upc'];
 				$sortOrder= $option['sort_order'];
 				$maxProductOptionValueId += 1;
 				$productOptionValueId = $maxProductOptionValueId;
 				$optionId = $optionIds[$name][$type];
 				$optionValueId = $optionValueIds[$name][$type][$value][$image];
 				$productOptionId = $productOptionIds[$productId][$optionId];
-				$sql  = "INSERT INTO ".DB_PREFIX."product_option_value (product_option_value_id,product_option_id,product_id,option_id,option_value_id,quantity,subtract,price,price_prefix,points,points_prefix,weight,weight_prefix) VALUES ";
-				$sql .= "($productOptionValueId,$productOptionId,$productId,$optionId,$optionValueId,$quantity,$subtract,$price,'$pricePrefix',$points,'$pointsPrefix',$weight,'$weightPrefix');";
+				$sql  = "INSERT INTO ".DB_PREFIX."product_option_value (product_option_value_id,product_option_id,product_id,option_id,option_value_id,quantity,subtract,price,price_prefix,points,points_prefix,weight,weight_prefix,upc) VALUES ";
+				$sql .= "($productOptionValueId,$productOptionId,$productId,$optionId,$optionValueId,$quantity,$subtract,$price,'$pricePrefix',$points,'$pointsPrefix',$weight,'$weightPrefix','$upc');";
+echo $sql."<br>";
 				$database->query( $sql );
 			}
 		}
-		
+				// TUNA  Adjusting the total quantity for a particular model.
+		// generate and execute SQL for storing the total product balances
+		//		TUNA
+		$result = array();
+		$queryt = "SELECT c.product_id, c.quantity, sum(b.quantity) totalqty FROM oc_product_option_value b LEFT JOIN oc_product c ON b.product_id = c.product_id GROUP BY c.model;";
+		$resultt = $database->query($queryt);
+//		$totalprod_lookup = array();
+				$queryt = "CREATE TEMPORARY TABLE oc_temp_product LIKE oc_product;\n";
+				$queryt .= "INSERT oc_temp_product SELECT * FROM oc_product;\n";
+				$this->multiquery( $database, $queryt );
+//echo $queryt."<br>";
+		foreach ($resultt as $element) {
+			foreach ($element as $row) {
+//				$totalprod_lookup[$row["product_id"]] = (INT)str_replace("'","",$row["totalqty"]);
+				if ((INT)str_replace("'","",$row["quantity"]) <> (INT)str_replace("'","",$row["totalqty"])) {
+					$sql4 =	"UPDATE oc_product ";
+					$sql4 .= "INNER JOIN oc_temp_product ON oc_temp_product.product_id = oc_product.product_id ";
+					$sql4 .= "SET oc_product.quantity = ".(INT)str_replace("'","",$row["totalqty"])." ";
+					$sql4 .= "WHERE oc_product.product_id = ".$row["product_id"].";";
+					$database->query($sql4);
+//echo $sql4."<br>";
+				}
+			}
+		}
+		$database->query("DROP TEMPORARY TABLE oc_temp_product;");
+//echo "DROP TEMPORARY TABLE oc_temp_product;";
 		$database->query("COMMIT;");
 		return TRUE;
 	}
@@ -1297,11 +1337,13 @@ class ModelAwangRlmexport extends Model {
 			$type = 'select';
 			$oval1 = $this->getCell($data,$i,$cnscol['COLORNAME'],'');
 			$oval2 = $this->getCell($data,$i,$cnscol['SIZE'],'');
-			$value = $oval1.' - Size '.$oval2;
+			$oval3 = $this->getCell($data,$i,$cnscol['SIZESCALE'],'');			
+			$value = $oval1.' - Size '.$oval2.' : '.$oval3;
 			$image = '';
 			$required = 'true';
 			$quantity = $this->getCell($data,$i,$cnscol['UNITS'],'0');
 			$subtract = 'true';
+			$upc = $this->getCell($data,$i,$cnscol['UPC'],'0');
 			$price = $this->getCell($data,$i,$cnscol['ATSPRICE'],'0');
 //			$price = $price * 0.7;
 			$price = '0';
@@ -1317,7 +1359,7 @@ class ModelAwangRlmexport extends Model {
 			$options[$i]['option'] = $option;
 			$options[$i]['type'] = $type;
 			$options[$i]['value'] = $value;
-			$options[$i]['image'] = $image;
+			$options[$i]['image'] = $image;	
 			$options[$i]['required'] = $required;
 			if (($type=='select') || ($type=='checkbox') || ($type=='radio') || ($type=='image')) {
 				$options[$i]['quantity'] = $quantity;
@@ -1328,12 +1370,13 @@ class ModelAwangRlmexport extends Model {
 				$options[$i]['points_prefix'] = $pointsPrefix;
 				$options[$i]['weight'] = $weight;
 				$options[$i]['weight_prefix'] = $weightPrefix;
+				$options[$i]['upc'] = $upc;		
 				$options[$i]['sort_order'] = $sortOrder;
 
-				if ($options[$i]['quantity'] > 0) {			
-					$updatequery = "UPDATE empstore.oc_product SET quantity = quantity + ".$options[$i]['quantity']." WHERE product_id = ".$options[$i]['product_id'];
-					$database->query( $updatequery );
-				}
+//				if ($options[$i]['quantity'] > 0) {			
+//					$updatequery = "UPDATE oc_product SET quantity = quantity + ".$options[$i]['quantity']." WHERE product_id = ".$options[$i]['product_id'];
+//					$database->query( $updatequery );
+//				}
 			}
 			$options[$i] = $this->moreOptionCells( $i, $data, $options[$i] );
 		}
@@ -3262,7 +3305,8 @@ class ModelAwangRlmexport extends Model {
 			$name = explode(" ", $fullname,2);
 			$employees[$i]['firstname']=htmlentities( $name[0], ENT_QUOTES, $this->detect_encoding($name[0]) );
 			$employees[$i]['lastname']=htmlentities( $name[1], ENT_QUOTES, $this->detect_encoding($name[1]) );;
-			$employees[$i]['email']=$this->getCell($data, $i, $empcol['E-mail']);
+//			$employees[$i]['email']=strtolower($this->getCell($data, $i, $empcol['E-mail']));
+			$employees[$i]['email']=strtolower($employees[$i]['firstname'].".".$employees[$i]['lastname']."@alexanderwang.com");
 			$employees[$i]['telephone']='212-532-3103';
 			$employees[$i]['fax']='212-532-3110';
 			$employees[$i]['password']='a85288724ea4fed586f7b681c4308cfe84cf384a';   //employeestore
@@ -3290,25 +3334,44 @@ class ModelAwangRlmexport extends Model {
 	
 	function storeEmployee( &$database, &$employees ) 
 	{
+		$colcheck = array();
+		$sql = "SELECT allowance,hold FROM oc_customer;";
+		$colcheck = $database->query($sql);
+		$sql = "";
+		if (!$colcheck) {
+			$sql = "ALTER TABLE oc_customer ADD allowance DECIMAL(15,4);\n";
+			$sql .="ALTER TABLE oc_customer ADD hold VARCHAR(32);";
+			$this->multiquery( $database, $sql );
+			$sql="";
+		}
 		// start transaction, 
 		$sql = "START TRANSACTION;\n";
 		// disable all accounts
 //		$sql .= "USE eshop;\n";   //** PROBLEM: The database name should not be hardcoded!!!
 		$sql .= "SET SQL_SAFE_UPDATES=0;\n";
-		$sql .= "ALTER TABLE oc_customer ADD UNIQUE (email);\n";
+		$sql .= "ALTER TABLE oc_customer MODIFY custom_field varchar(32);\n";
+		$sql .= "ALTER TABLE oc_customer ADD UNIQUE (custom_field);\n";
 		$sql .= "UPDATE `".DB_PREFIX."customer` SET status=0;\n";
 		$this->multiquery( $database, $sql );
 		$sql='';
 		$database->query($sql);
 		$database->query("COMMIT;");
 		//keep track of new products and updated ones
-//		$newones = 0;
+		$newones = 0;
 		$updateemp = 0;
 		$firstone = $database->getLastId();
 
-		// generate and execute SQL for storing the products
-		//			if ($productId==0) {$newones++;} else {$updatedones++;}
-		
+		// generate and execute SQL for storing the employee allowance balances
+		//		seaweed
+		$result = array();
+		$query = "SELECT b.custom_field, c.customer_id, SUM(c.amount) Allowance FROM oc_customer_transaction c LEFT JOIN oc_customer b ON c.customer_id=b.customer_id GROUP BY c.customer_id;";
+		$result = $database->query($query);
+		$allow_lookup = array();
+		foreach ($result as $element) {
+			foreach ($element as $row) {
+				$allow_lookup[$row["custom_field"]] = $row["Allowance"];
+			}
+		}
 		foreach ($employees as $employee) {
 			$customer_id = $employee['customer_id'];
 			$customer_group_id = $employee['customer_group_id'];
@@ -3333,13 +3396,14 @@ class ModelAwangRlmexport extends Model {
 			$date_added = $database->escape($employee['date_added']);
 			$allowance = "'".$database->escape($employee['allowance'])."'";
 			$hold = "'".$employee['hold']."'";
+
 			$lastonestart = $database->getLastId();
 			$sql = '';
 			$sql  = "INSERT INTO ".DB_PREFIX."customer (customer_id,customer_group_id,store_id,firstname,lastname,email,telephone,fax,password,salt,cart,wishlist,newsletter,address_id,custom_field,ip,status,approved,safe,token,date_added,allowance,hold)";
 			$sql .= " VALUES ";
 			$sql .= "($customer_id,$customer_group_id,$store_id,$firstname,$lastname,$email,$telephone,$fax,$password,$salt,$cart,$wishlist,$newsletter,$address_id,$custom_field,$ip,$status,$approved,$safe,$token,$date_added,$allowance,$hold)";
 			$sql .= " ON DUPLICATE KEY UPDATE ";
-			$sql .= "status=VALUES(status), allowance=VALUES(allowance), hold=VALUES(hold);";
+			$sql .= "email=VALUES(email), status=VALUES(status), allowance=VALUES(allowance), hold=VALUES(hold);";
 // echo $sql."<br>";
 // 			$this->db->query($sql);
  			$database->query($sql);
@@ -3348,9 +3412,10 @@ class ModelAwangRlmexport extends Model {
 // 			$result = $this->db->query($tesql);
 //var_dump($result);
 			$lastoneend = $database->getLastId();
+//die("[$lastoneend]");
 			$updateemp++;
 //			echo "Start[$lastonestart] End[$lastoneend] <br>";
-			if ($lastoneend > $lastonestart){
+//			if ($lastoneend > $lastonestart){
 				$sql2 ='';
 				$sql2 = "INSERT INTO ".DB_PREFIX."address (address_id,customer_id,firstname,lastname,company,address_1,address_2,city,postcode,country_id,zone_id,custom_field) VALUES ";
 				$sql2 .= "($lastoneend,$lastoneend,$firstname,$lastname,'Alexander Wang, Inc.','386 Broadway','Ground Floor','New York','10013','223','3655',$custom_field)";
@@ -3358,19 +3423,52 @@ class ModelAwangRlmexport extends Model {
 				$sql2 .= "firstname=VALUES(firstname),lastname=VALUES(lastname),company=VALUES(company),address_1=VALUES(address_1),address_2=VALUES(address_2),city=VALUES(city),postcode=VALUES(postcode),country_id=VALUES(country_id),zone_id=VALUES(zone_id),custom_field=VALUES(custom_field);";
 	// echo $sql2."  hh<br>";
 				$database->query($sql2);
-//				$newones++;
+//			}
+//	echo "KEK *******".$updateemp."****************"."<br>";					
+//	echo "Comparing *******".str_replace("'","",$custom_field)."****************"."<br>";					
+//	echo "Comparing *******".array_key_exists(str_replace("'","",$custom_field), $allow_lookup)."****************"."<br>";					
+//	echo "Amount *******".$allow_lookup[$custom_field]."****************"."<br>";					
+					setlocale(LC_MONETARY, 'en_US');
+			if (array_key_exists(str_replace("'","",$custom_field), $allow_lookup)) { 
+				// Code to balance out allowance from RLM to the employee store  SUSHI
+					$adjust = (float)(str_replace("'","",$allowance))-$allow_lookup[str_replace("'","",$custom_field)];
+//				echo "Match FOUND *******".$adjust."****************"."<br>";					
+					if ($adjust) {
+						$money_text = 'Adjustment of total to the RLM amount of %i as of ';
+						$description = money_format($money_text, (float)(str_replace("'","",$allowance)));
+//			echo("Something to adjust. [". $adjust."]=".$allow_lookup[str_replace("'","",$custom_field)]."-[".(float)(str_replace("'","",$allowance))."]");
+						$sql3 ='';
+						$sql3 = "INSERT INTO ".DB_PREFIX."customer_transaction (customer_transaction_id,customer_id,order_id,description,amount,date_added) VALUES ";
+						$sql3 .= "(NULL,$lastoneend,0,CONCAT($description,DATE(NOW())),$adjust,NOW())";
+						$sql3 .= ";";
+//			 echo "ADJUST{".$sql3."}  hh<br>";
+						$database->query($sql3);
+						$newones++;
+					} // Ignore if there is nothing to adjust
+			} else {
+					if ($lastoneend) {
+						$adjust = (float)(str_replace("'","",$allowance));
+						$description = "'Beginning Balance. Welcome to Alexander Wang. '";
+						$sql3 ='';
+						$sql3 = "INSERT INTO ".DB_PREFIX."customer_transaction (customer_transaction_id,customer_id,order_id,description,amount,date_added) VALUES ";
+						$sql3 .= "(NULL,$lastoneend,0,CONCAT($description,DATE(NOW())),$adjust,NOW())";
+						$sql3 .= ";";
+//			 echo "NEW{".$sql3."}  hh<br>";
+						$database->query($sql3);
+						$newones++;
+					}
 			}
 		}
-		
 		// final commit
 		$database->query("COMMIT;");
 //		$updatedones = $lastoneend-$firstone;
-
+//die();
 		// Store the status to be displayed on page
-		$this->session->data['uploadstatus'] = "SUCCESS: $updateemp employee records were updated";
+		$this->session->data['uploadstatus'] = "SUCCESS: $updateemp employee records were updated and $newones allowances were updated";
 
 		return TRUE;
 	}
+
 /***** END OF EMPLOYEE MODULE ********/
 }
 ?>

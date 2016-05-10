@@ -499,7 +499,11 @@ class ModelAwangRlmexport extends Model {
 			// TODO: Is there a better way to set this array? Refer to: http://www.php.net/manual/en/language.types.array.php
 		foreach ($result as $element) {
 			foreach ($element as $row) {
+				if (is_numeric($row['description'])) {
 			    $cat_lookup[$row['description']] = $row['category_id'];
+				} else {
+			    $cat_lookup[$row['description']] = $row['category_id'];
+				}
 //			    $cat_lookup[$row["category_id"]] = $row["name"];
 		}}
 //		mysql_free_result($result);
@@ -557,11 +561,15 @@ class ModelAwangRlmexport extends Model {
 //			if ($productId=="") {
 //				continue;
 //			}
-
+// JOHN
 			$name = $this->getCell($data, $i, $cnscol['STYLEDESCRIPTION']);
 			$name = htmlentities( $name, ENT_QUOTES, $this->detect_encoding($name) );
 			$topcategory = $this->getCell($data, $i, $cnscol['SUBDIV'],'');
 			$topcategory = htmlentities( $topcategory, ENT_QUOTES, $this->detect_encoding($topcategory) );
+			if (!$topcategory) {
+			$topcategory = $this->getCell($data, $i, $cnscol['DIVISIONNAME'],'');
+			$topcategory = htmlentities( $topcategory, ENT_QUOTES, $this->detect_encoding($topcategory) );
+			}
 //			$category = $this->getCell($data, $i, $cnscol['CATEGORY'],'');
 //			$arr = explode(' ',trim($category));
 //			$category = $arr[0]; //Get 1st word as the sub category name
@@ -571,12 +579,27 @@ class ModelAwangRlmexport extends Model {
 			} else {
 				$categories = '0';
 			}
+//echo "[[".$topcategory."]]<br>";
 /*			if (isset($topcat_lookup[$topcategory][$category])) {
 				$categories = $topcat_lookup[$topcategory][$category];				
 			} else {
 				$categories = '0';
 			}
 */
+			$sizecategory = $this->getCell($data, $i, $cnscol['SIZE'],'');
+			$sizecategory = str_replace("'","",$sizecategory);
+			$sizecategory = htmlentities( $sizecategory, ENT_QUOTES, $this->detect_encoding($sizecategory) );
+			if (isset($cat_lookup[$sizecategory])) {
+				$categories = $categories .",". $cat_lookup[$sizecategory];				
+			} 
+//var_dump($cat_lookup);
+//echo "[".$sizecategory."]<br>";
+//die("{".$categories."}<br>");
+			/*			else {
+				$scategories = '0';
+			}
+*/
+
 //			echo "Checking for topcat_lookup[$topcategory][$category] and found [$categories] <br>";
 //			echo "Checking using cat_lookup[".$cat_lookup['15']."][".$cat_lookup['15']."] and found [".$topcat_lookup[$cat_lookup['15']][$cat_lookup['15']]."] <br>";
 
@@ -1015,13 +1038,17 @@ class ModelAwangRlmexport extends Model {
 				$isFirstRow = FALSE;
 				continue;
 			}
+			$sizecat = $this->getCell($data,$i,$cnscol['SIZE']);
 			$divnum = $this->getCell($data,$i,$cnscol['DIVISION']);
 			$name = $this->getCell($data,$i,$cnscol['SUBDIV']);
 			$name2 = $this->getCell($data,$i,$cnscol['CATEGORY']);
 			$arr = explode(' ',trim($name2));
 			$name2 = $arr[0]; //Get 1st word as the sub category name
-
 			$name = htmlentities( $name, ENT_QUOTES, $this->detect_encoding($name) );
+
+			var_dump($catnames);
+			die();
+			
 			if (!$name) { continue; }
 			if (array_key_exists($name, $catnames)) {
 				$name = $name2;
@@ -1255,7 +1282,7 @@ class ModelAwangRlmexport extends Model {
 				$productOptionId = $productOptionIds[$productId][$optionId];
 				$sql  = "INSERT INTO ".DB_PREFIX."product_option_value (product_option_value_id,product_option_id,product_id,option_id,option_value_id,quantity,subtract,price,price_prefix,points,points_prefix,weight,weight_prefix,upc) VALUES ";
 				$sql .= "($productOptionValueId,$productOptionId,$productId,$optionId,$optionValueId,$quantity,$subtract,$price,'$pricePrefix',$points,'$pointsPrefix',$weight,'$weightPrefix','$upc');";
-echo $sql."<br>";
+//echo $sql."<br>";
 				$database->query( $sql );
 			}
 		}
@@ -2177,17 +2204,21 @@ echo $sql."<br>";
 		$emparray = array();
 		$emplookup = array();
 		$sql = "SELECT customer_id, custom_field FROM oc_customer;";
-		$emparray = $database->query($sql);
+		$result = $database->query($sql);
 
-		foreach ($emparray->rows as $emp) {
-//echo "HEHH : ";
-			if (substr($emp['custom_field'],0,4)=='PERS') {
-// die("DIED");
-				$emplookup[$emp['custom_field']]=$emp['customer_id'];
+		foreach ($result as $element) {
+			foreach ($element as $row) {
+				if (substr($row['custom_field'],0,4)=='PERS') {
+					$emparray[$row['custom_field']]=$row['customer_id'];
+				}
 			}
 		}
-//echo $emplookup['PERS766'];
-//die();
+		
+//		foreach ($emparray->rows as $emp) {
+//			if (substr($emp['custom_field'],0,4)=='PERS') {
+//				$emplookup[$emp['custom_field']]=$emp['customer_id'];
+//			}
+//		}
 		return $emparray;
 	}	
 
@@ -2212,9 +2243,10 @@ echo $sql."<br>";
 			$objReader = PHPExcel_IOFactory::createReader($inputFileType);
 			$objReader->setReadDataOnly(true);
 			$reader = $objReader->load($filename);
-
-			$test=$this->loadEmployee($database);
-			
+// CHILI
+			$emplist=$this->loadEmployee($database);
+//var_dump($emplist);
+//die();			
 			// read the various worksheets and load them to the database
 			$ok = $this->validateRLMUpload( $reader );
 			if (!$ok) {
@@ -3349,8 +3381,8 @@ echo $sql."<br>";
 		// disable all accounts
 //		$sql .= "USE eshop;\n";   //** PROBLEM: The database name should not be hardcoded!!!
 		$sql .= "SET SQL_SAFE_UPDATES=0;\n";
-		$sql .= "ALTER TABLE oc_customer MODIFY custom_field varchar(32);\n";
-		$sql .= "ALTER TABLE oc_customer ADD UNIQUE (custom_field);\n";
+//		$sql .= "ALTER TABLE oc_customer MODIFY custom_field varchar(32);\n";
+//		$sql .= "ALTER TABLE oc_customer ADD UNIQUE (custom_field);\n";
 		$sql .= "UPDATE `".DB_PREFIX."customer` SET status=0;\n";
 		$this->multiquery( $database, $sql );
 		$sql='';
@@ -3403,7 +3435,7 @@ echo $sql."<br>";
 			$sql .= " VALUES ";
 			$sql .= "($customer_id,$customer_group_id,$store_id,$firstname,$lastname,$email,$telephone,$fax,$password,$salt,$cart,$wishlist,$newsletter,$address_id,$custom_field,$ip,$status,$approved,$safe,$token,$date_added,$allowance,$hold)";
 			$sql .= " ON DUPLICATE KEY UPDATE ";
-			$sql .= "email=VALUES(email), status=VALUES(status), allowance=VALUES(allowance), hold=VALUES(hold);";
+			$sql .= "status=VALUES(status), allowance=VALUES(allowance), hold=VALUES(hold);";
 // echo $sql."<br>";
 // 			$this->db->query($sql);
  			$database->query($sql);
@@ -3428,14 +3460,14 @@ echo $sql."<br>";
 //	echo "Comparing *******".str_replace("'","",$custom_field)."****************"."<br>";					
 //	echo "Comparing *******".array_key_exists(str_replace("'","",$custom_field), $allow_lookup)."****************"."<br>";					
 //	echo "Amount *******".$allow_lookup[$custom_field]."****************"."<br>";					
-					setlocale(LC_MONETARY, 'en_US');
+//					setlocale(LC_MONETARY, 'en_US');
 			if (array_key_exists(str_replace("'","",$custom_field), $allow_lookup)) { 
 				// Code to balance out allowance from RLM to the employee store  SUSHI
 					$adjust = (float)(str_replace("'","",$allowance))-$allow_lookup[str_replace("'","",$custom_field)];
 //				echo "Match FOUND *******".$adjust."****************"."<br>";					
 					if ($adjust) {
-						$money_text = 'Adjustment of total to the RLM amount of %i as of ';
-						$description = money_format($money_text, (float)(str_replace("'","",$allowance)));
+						$allowamount = number_format((float)(str_replace("'","",$allowance)),2);
+						$description = "'Adjustment of total to the RLM amount of $$allowamount as of '";
 //			echo("Something to adjust. [". $adjust."]=".$allow_lookup[str_replace("'","",$custom_field)]."-[".(float)(str_replace("'","",$allowance))."]");
 						$sql3 ='';
 						$sql3 = "INSERT INTO ".DB_PREFIX."customer_transaction (customer_transaction_id,customer_id,order_id,description,amount,date_added) VALUES ";
@@ -3470,5 +3502,168 @@ echo $sql."<br>";
 	}
 
 /***** END OF EMPLOYEE MODULE ********/
+/***** BEGIN OF INVOICE RECORD MODULE ********/
+	function invoicerec( $filename ) {
+		// we use our own error handler
+		global $registry;
+		$registry = $this->registry;
+		set_error_handler('error_handler_for_rlmexport',E_ALL);
+		register_shutdown_function('fatal_error_shutdown_handler_for_rlmexport');
+
+		try {
+			$database =& $this->db;
+			$this->session->data['export_nochange'] = 1;
+
+			$emplist=$this->loadEmployee($database);			
+			
+			// we use the PHPExcel package from http://phpexcel.codeplex.com/
+			$cwd = getcwd();
+			chdir( DIR_SYSTEM.'PHPExcel' );
+			require_once( 'Classes/PHPExcel.php' );
+			chdir( $cwd );
+			// parse uploaded spreadsheet file
+			$inputFileType = PHPExcel_IOFactory::identify($filename);
+			$objReader = PHPExcel_IOFactory::createReader($inputFileType);
+			$objReader->setReadDataOnly(true);
+			$reader = $objReader->load($filename);
+			
+			// read the various worksheets and load them to the database
+			$ok = $this->validateInvoice( $reader );
+			if (!$ok) {
+				return FALSE;
+			}
+			$this->clearCache();
+			$this->session->data['export_nochange'] = 0;
+			
+			$ok = $this->uploadInvoice( $reader, $emplist, $database );
+			if (!$ok) {
+				return FALSE;
+			}
+			return $ok;
+			
+		} catch (Exception $e) {
+			$errstr = $e->getMessage();
+			$errline = $e->getLine();
+			$errfile = $e->getFile();
+			$errno = $e->getCode();
+			$this->session->data['export_error'] = array( 'errstr'=>$errstr, 'errno'=>$errno, 'errfile'=>$errfile, 'errline'=>$errline );
+			if ($this->config->get('config_error_log')) {
+				$this->log->write('PHP ' . get_class($e) . ':  ' . $errstr . ' in ' . $errfile . ' on line ' . $errline);
+			}
+			return FALSE;
+		}
+	}
+
+	function validateInvoice( &$reader ) 
+	{
+		$sheetNames = $reader->getSheetNames();
+		if ($sheetNames[0] != 'AR Invoice Register') {
+			 error_log(date('Y-m-d H:i:s - ', time()).$this->language->get( 'error_sheet_count' )."\n",3,DIR_LOGS."error.txt");
+			return FALSE;					
+		}
+		return TRUE;
+	}
+
+	function uploadInvoice( &$reader, &$emplist, &$database ) {
+
+		$data = $reader->getSheet(0);
+		$invoices = array();
+		$invoice = array();
+		$name = array();
+		$invcol = $this->invcol();
+		$isFirstRow = TRUE;
+		$isHeaderRow = TRUE;
+		$i = 0;
+		$k = $data->getHighestRow();
+		for ($i=0; $i<$k; $i+=1) {
+			if ($isFirstRow) {
+				$isFirstRow = FALSE;
+				continue;
+			}
+			if ($isHeaderRow) {
+				$isHeaderRow = FALSE;
+				continue;
+			}						
+			$customer_id = "'".$this->getCell($data, $i, $invcol['CustID'])."'";
+// GOD
+//echo $customer_id."  [".$emplist['PERS760']."] <br> ";
+//echo $customer_id."  [".$emplist[str_replace("'","",$customer_id)]."] <br> ";
+			if (array_key_exists(str_replace("'","",$customer_id),$emplist)) {
+				$invoices[$i]['customer_id']=$emplist[str_replace("'","",$customer_id)];
+			} else {
+				continue;
+			}
+			
+			$invoices[$i]['customer_invoice_id']= 'NULL';
+			$invoices[$i]['invoice_id']=$this->getCell($data, $i, $invcol['InvoiceNum']);
+			$invoices[$i]['invoice_date']="STR_TO_DATE('".$this->getCell($data, $i, $invcol['InvoiceDate'])."', '%m/%d/%Y')";
+			$invoices[$i]['order_num']=$this->getCell($data, $i, $invcol['OrderID']);
+			$invoices[$i]['cust_po']=$this->getCell($data, $i, $invcol['CustPO']);
+			$invoices[$i]['subdivname']=$this->getCell($data, $i, $invcol['SubDivName']);
+			$invoices[$i]['units']=$this->getCell($data, $i, $invcol['Units']);
+			$invoices[$i]['std_amount']=$this->getCell($data, $i, $invcol['StdAmount']);
+			$invoices[$i]['tax_amount']=$this->getCell($data, $i, $invcol['TaxAmount']);
+			$invoices[$i]['ar_amount']=$this->getCell($data, $i, $invcol['ARAmount']);
+			$invoices[$i]['date_added']='NOW()';
+		}
+		return $this->storeInvoice( $database, $invoices );
+	}
+	
+	function invcol(){
+		return array ('InvoiceNum'=>1,'InvoiceDate'=>2,'CustID'=>7,'OrderID'=>10,'CustPO'=>11,'SubDivName'=>18,'Units'=>29,'StdAmount'=>32,'TaxAmount'=>36,'ARAmount'=>40);
+	}	
+	
+	function storeInvoice( &$database, &$invoices ) 
+	{
+		$sql = "";
+		// start transaction, 
+		$sql = "START TRANSACTION;\n";
+		// disable all accounts
+		$sql .= "SET SQL_SAFE_UPDATES=0;\n";
+		$this->multiquery( $database, $sql );
+		$sql='';
+		$database->query($sql);
+		$database->query("COMMIT;");
+		//keep track of new products and updated ones
+		$newones = 0;
+		$updateinvoice = 0;
+		$firstone = $database->getLastId();
+
+		foreach ($invoices as $invoice) {
+			$customer_invoice_id = $database->escape($invoice['customer_invoice_id']);
+			$invoice_id = $invoice['invoice_id'];
+//			$invoice_date = $database->escape($invoice['invoice_date']);
+			$invoice_date = $invoice['invoice_date'];
+			$customer_id = $invoice['customer_id'];
+			$order_num = $invoice['order_num'];
+			$cust_po = "'".$invoice['cust_po']."'";
+			$subdivname = "'".$database->escape($invoice['subdivname'])."'";
+			$units = $database->escape($invoice['units']);
+			$std_amount = "'".$database->escape($invoice['std_amount'])."'";
+			$tax_amount = "'".$database->escape($invoice['tax_amount'])."'";
+			$ar_amount = "'".$database->escape($invoice['ar_amount'])."'";
+			$date_added = $database->escape($invoice['date_added']);
+
+			$lastonestart = $database->getLastId();
+			$sql = '';
+			$sql  = "INSERT INTO ".DB_PREFIX."customer_invoice (customer_invoice_id,invoice_id,invoice_date,customer_id,order_num,cust_po,subdivname,units,std_amount,tax_amount,ar_amount,date_added)";
+			$sql .= " VALUES ";
+			$sql .= "($customer_invoice_id,$invoice_id,$invoice_date,$customer_id,$order_num,$cust_po,$subdivname,$units,$std_amount,$tax_amount,$ar_amount,$date_added)";
+			$sql .= " ON DUPLICATE KEY UPDATE ";
+			$sql .= "invoice_id=VALUES(invoice_id),invoice_date=VALUES(invoice_date),customer_id=VALUES(customer_id),order_num=VALUES(order_num),cust_po=VALUES(cust_po),subdivname=VALUES(subdivname),units=VALUES(units),std_amount=VALUES(std_amount),tax_amount=VALUES(tax_amount),ar_amount=VALUES(ar_amount),date_added=VALUES(date_added);";
+//die($sql);
+ 			$database->query($sql);
+			$lastoneend = $database->getLastId();
+			$updateinvoice++;
+		}
+		// final commit
+		$database->query("COMMIT;");
+		// Store the status to be displayed on page
+		$this->session->data['uploadstatus'] = "SUCCESS: $updateinvoice invoice records were updated";
+
+		return TRUE;
+	}
+
+/***** END OF INVOICE MODULE ********/
 }
 ?>

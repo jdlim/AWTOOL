@@ -28,6 +28,16 @@ class ControllerAwangRlmexport extends Controller {
 					$this->error['warning'] = $this->language->get('error_upload');
 				}
 			}
+			if ((isset( $this->request->files['invoicerec'] )) && (is_uploaded_file($this->request->files['invoicerec']['tmp_name']))) {
+				$file = $this->request->files['invoicerec']['tmp_name'];
+				if ($this->model_awang_rlmexport->invoicerec($file)===TRUE) {
+					$this->session->data['success'] = $this->language->get('text_success');
+					$this->response->redirect($this->url->link('awang/rlmexport', 'token=' . $this->session->data['token'], 'SSL'));
+				}
+				else {
+					$this->error['warning'] = $this->language->get('error_upload');
+				}
+			}
 		}
 
 		if (!empty($this->session->data['export_error']['errstr'])) {

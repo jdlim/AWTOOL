@@ -42,7 +42,13 @@
               <input type="file" name="employee" id="employee" />
             </div>
           </div>
-        </form>
+          <div class="form-group">
+            <label class="col-sm-2 control-label" for="invoicerec"><?php echo "Invoice Data Upload"; ?></label>
+            <div class="col-sm-10">
+              <input type="file" name="invoicerec" id="invoicerec" />
+            </div>
+          </div>
+		  </form>
       </div>
     </div>
   </div>
